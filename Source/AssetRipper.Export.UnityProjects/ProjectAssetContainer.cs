@@ -1,5 +1,6 @@
 using AssetRipper.Assets;
 using AssetRipper.Assets.Collections;
+using AssetRipper.Export.Configuration;
 using AssetRipper.Export.UnityProjects.Project;
 using AssetRipper.Import.Configuration;
 using AssetRipper.Processing.Scenes;
@@ -18,6 +19,9 @@ public class ProjectAssetContainer : IExportContainer
 		CurrentCollection = null!;
 
 		ExportVersion = options.Version;
+		AssetPathExportMode = options is FullConfiguration fullConfiguration
+			? fullConfiguration.ExportSettings.AssetPathExportMode
+			: AssetRipper.Export.Configuration.AssetPathExportMode.Default;
 
 		m_buildSettings = assets.OfType<IBuildSettings>().FirstOrDefault();
 
@@ -88,6 +92,7 @@ public class ProjectAssetContainer : IExportContainer
 	public IExportCollection CurrentCollection { get; set; }
 	public AssetCollection File => CurrentCollection.File;
 	public UnityVersion ExportVersion { get; }
+	public AssetPathExportMode AssetPathExportMode { get; }
 
 	private readonly ProjectExporter m_exporter;
 	private readonly Dictionary<IUnityObjectBase, IExportCollection> m_assetCollections = new();

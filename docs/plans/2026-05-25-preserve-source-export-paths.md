@@ -170,12 +170,12 @@ Adjust the local `Export` helper to accept an optional `FullConfiguration`.
 In `AssetExportCollection.Export`, replace direct `Asset.GetBestDirectory()` and `GetUniqueFileName(Asset, subPath, fileSystem)` calculation with:
 
 ```csharp
-ExportPathInfo exportPath = ExportPathResolver.Resolve(Asset, container.Settings.ExportSettings.AssetPathExportMode);
+ExportPathInfo exportPath = ExportPathResolver.Resolve(Asset, container.AssetPathExportMode);
 string subPath = fileSystem.Path.Join(projectDirectory, exportPath.Directory);
 string fileName = GetUniqueFileName(subPath, $"{exportPath.Name}.{GetExportExtension(Asset)}", fileSystem);
 ```
 
-If `IExportContainer` does not expose settings, add a minimal property to the concrete container or pass mode into the collection through `ProjectExporter`.
+Expose the selected mode through `IExportContainer.AssetPathExportMode`; `ProjectAssetContainer` can populate it from `FullConfiguration.ExportSettings`.
 
 **Step 3: Run focused tests**
 

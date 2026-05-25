@@ -54,6 +54,9 @@ partial class SettingsPage
 			case nameof(ExportSettings.TextExportMode):
 				Configuration.ExportSettings.TextExportMode = TryParseEnum<TextExportMode>(value);
 				break;
+			case nameof(ExportSettings.AssetPathExportMode):
+				Configuration.ExportSettings.AssetPathExportMode = TryParseEnum<AssetPathExportMode>(value);
+				break;
 			case nameof(ExportSettings.LanguageCode):
 				Configuration.ExportSettings.LanguageCode = value;
 				break;
@@ -161,6 +164,11 @@ partial class SettingsPage
 	private static void WriteDropDownForTextExportMode(TextWriter writer)
 	{
 		WriteDropDown(writer, TextExportModeDropDownSetting.Instance, Configuration.ExportSettings.TextExportMode, nameof(ExportSettings.TextExportMode));
+	}
+
+	private static void WriteDropDownForAssetPathExportMode(TextWriter writer)
+	{
+		WriteDropDown(writer, AssetPathExportModeDropDownSetting.Instance, Configuration.ExportSettings.AssetPathExportMode, nameof(ExportSettings.AssetPathExportMode));
 	}
 
 	private static void WriteCheckBoxForExportUnreadableAssets(TextWriter writer, string label, bool disabled = false)

@@ -49,6 +49,11 @@ public sealed record class ExportSettings
 	/// </summary>
 	public TextExportMode TextExportMode { get; set; } = TextExportMode.Parse;
 
+	/// <summary>
+	/// How are exported asset paths chosen?
+	/// </summary>
+	public AssetPathExportMode AssetPathExportMode { get; set; } = AssetPathExportMode.Default;
+
 	public bool ExportUnreadableAssets { get; set; } = false;
 
 	public bool SaveSettingsToDisk { get; set; }
@@ -65,6 +70,7 @@ public sealed record class ExportSettings
 		Logger.Info(LogCategory.General, $"{nameof(ShaderExportMode)}: {ShaderExportMode}");
 		Logger.Info(LogCategory.General, $"{nameof(SpriteExportMode)}: {SpriteExportMode}");
 		Logger.Info(LogCategory.General, $"{nameof(TextExportMode)}: {TextExportMode}");
+		Logger.Info(LogCategory.General, $"{nameof(AssetPathExportMode)}: {AssetPathExportMode}");
 		Logger.Info(LogCategory.General, $"{nameof(ExportUnreadableAssets)}: {ExportUnreadableAssets}");
 	}
 }

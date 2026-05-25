@@ -1,5 +1,6 @@
 using AssetRipper.Assets;
 using AssetRipper.Assets.Collections;
+using AssetRipper.Export.Configuration;
 
 namespace AssetRipper.Export.UnityProjects;
 
@@ -15,4 +16,6 @@ public interface IExportContainer
 	AssetCollection File { get; }
 
 	UnityVersion ExportVersion { get; }
+
+	AssetPathExportMode AssetPathExportMode { get; }
 }

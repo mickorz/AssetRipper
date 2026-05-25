@@ -1,5 +1,6 @@
 using AssetRipper.Assets;
 using AssetRipper.Assets.Collections;
+using AssetRipper.Export.UnityProjects.Paths;
 using AssetRipper.SourceGenerated.Classes.ClassID_1034;
 
 namespace AssetRipper.Export.UnityProjects;
@@ -14,8 +15,9 @@ public class AssetExportCollection<T> : ExportCollection where T : IUnityObjectB
 
 	public override bool Export(IExportContainer container, string projectDirectory, FileSystem fileSystem)
 	{
-		string subPath = fileSystem.Path.Join(projectDirectory, FileSystem.FixInvalidPathCharacters(Asset.GetBestDirectory()));
-		string fileName = GetUniqueFileName(Asset, subPath, fileSystem);
+		ExportPathInfo exportPath = ExportPathResolver.Resolve(Asset, container.AssetPathExportMode);
+		string subPath = fileSystem.Path.Join(projectDirectory, exportPath.Directory);
+		string fileName = GetUniqueFileName(subPath, $"{exportPath.Name}.{GetExportExtension(Asset)}", fileSystem);
 
 		fileSystem.Directory.Create(subPath);
 

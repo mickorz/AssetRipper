@@ -1,6 +1,7 @@
 ﻿using AsmResolver.DotNet;
 using AssetRipper.Assets.Bundles;
 using AssetRipper.Assets.Collections;
+using AssetRipper.Export.Configuration;
 using AssetRipper.Export.UnityProjects;
 using AssetRipper.Import.Structure.Assembly.Managers;
 using AssetRipper.IO.Files;
@@ -40,6 +41,36 @@ internal class ExportTests
 		VirtualFileSystem fileSystem = Export(collection);
 
 		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/MonoBehaviour/MonoBehaviour.asset"));
+	}
+
+	[Test]
+	public void DefaultExportKeepsExistingBestPathBehavior()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+
+		IMonoBehaviour monoBehaviour = collection.CreateMonoBehaviour();
+		monoBehaviour.Name = "Name";
+		monoBehaviour.OriginalPath = "Assets/SourceFolder/OriginalName.asset";
+
+		VirtualFileSystem fileSystem = Export(collection);
+
+		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/SourceFolder/Name.asset"));
+	}
+
+	[Test]
+	public void PreserveContainerPathUsesOriginalPath()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+
+		IMonoBehaviour monoBehaviour = collection.CreateMonoBehaviour();
+		monoBehaviour.Name = "RuntimeName";
+		monoBehaviour.OriginalPath = "Assets/SourceFolder/OriginalName.asset";
+
+		FullConfiguration configuration = new();
+		configuration.ExportSettings.AssetPathExportMode = AssetPathExportMode.PreserveContainerPath;
+		VirtualFileSystem fileSystem = Export(collection, configuration: configuration);
+
+		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/SourceFolder/OriginalName.asset"));
 	}
 
 	[Test]
@@ -163,10 +194,10 @@ internal class ExportTests
 		Assert.That(fileSystem.File.ReadAllText("/output/ExportedProject/Assets/MonoBehaviour/TestBehaviour.asset"), Does.Contain(assemblyGuid));
 	}
 
-	private static VirtualFileSystem Export(ProcessedAssetCollection collection, string outputPath = "output", IAssemblyManager? assemblyManager = null, VirtualFileSystem? fileSystem = null)
+	private static VirtualFileSystem Export(ProcessedAssetCollection collection, string outputPath = "output", IAssemblyManager? assemblyManager = null, VirtualFileSystem? fileSystem = null, FullConfiguration? configuration = null)
 	{
 		fileSystem ??= new();
-		new ExportHandler(new()).Export(CreateGameData(collection, assemblyManager), outputPath, fileSystem);
+		new ExportHandler(configuration ?? new()).Export(CreateGameData(collection, assemblyManager), outputPath, fileSystem);
 		return fileSystem;
 	}
 
