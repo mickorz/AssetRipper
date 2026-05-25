@@ -3,6 +3,7 @@ using AssetRipper.Export.Configuration;
 using AssetRipper.Export.UnityProjects.Paths;
 using AssetRipper.Primitives;
 using AssetRipper.SourceGenerated.Classes.ClassID_114;
+using AssetRipper.SourceGenerated.Extensions;
 
 namespace AssetRipper.Tests;
 
