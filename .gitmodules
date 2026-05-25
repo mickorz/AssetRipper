@@ -1,0 +1,4 @@
+[submodule "3rdParties/USCSandbox"]
+	path = 3rdParties/USCSandbox
+	url = https://github.com/nesrak1/USCSandbox.git
+	ignore = untracked
