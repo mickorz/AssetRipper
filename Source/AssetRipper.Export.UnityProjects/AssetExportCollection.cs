@@ -15,7 +15,7 @@ public class AssetExportCollection<T> : ExportCollection where T : IUnityObjectB
 
 	public override bool Export(IExportContainer container, string projectDirectory, FileSystem fileSystem)
 	{
-		ExportPathInfo exportPath = ExportPathResolver.Resolve(Asset, container.AssetPathExportMode);
+		ExportPathInfo exportPath = ExportPathResolver.Resolve(Asset, container.AssetPathExportMode, GetSourceFilePathAsset());
 		string subPath = fileSystem.Path.Join(projectDirectory, exportPath.Directory);
 		string fileName = GetUniqueFileName(subPath, $"{exportPath.Name}.{GetExportExtension(Asset)}", fileSystem);
 
@@ -30,6 +30,11 @@ public class AssetExportCollection<T> : ExportCollection where T : IUnityObjectB
 			return true;
 		}
 		return false;
+	}
+
+	protected virtual IUnityObjectBase GetSourceFilePathAsset()
+	{
+		return Asset;
 	}
 
 	public override bool Contains(IUnityObjectBase asset)

@@ -7,7 +7,10 @@ using AssetRipper.Import.Structure.Assembly.Managers;
 using AssetRipper.IO.Files;
 using AssetRipper.Primitives;
 using AssetRipper.Processing;
+using AssetRipper.Processing.Prefabs;
 using AssetRipper.Processing.ScriptableObject;
+using AssetRipper.SourceGenerated.Classes.ClassID_1;
+using AssetRipper.SourceGenerated.Classes.ClassID_1001;
 using AssetRipper.SourceGenerated.Classes.ClassID_114;
 using AssetRipper.SourceGenerated.Classes.ClassID_115;
 using AssetRipper.SourceGenerated.Classes.ClassID_43;
@@ -44,7 +47,7 @@ internal class ExportTests
 	}
 
 	[Test]
-	public void DefaultExportKeepsExistingBestPathBehavior()
+	public void DefaultExportPreservesContainerPath()
 	{
 		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
 
@@ -53,6 +56,22 @@ internal class ExportTests
 		monoBehaviour.OriginalPath = "Assets/SourceFolder/OriginalName.asset";
 
 		VirtualFileSystem fileSystem = Export(collection);
+
+		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/SourceFolder/OriginalName.asset"));
+	}
+
+	[Test]
+	public void ExplicitDefaultExportKeepsExistingBestPathBehavior()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+
+		IMonoBehaviour monoBehaviour = collection.CreateMonoBehaviour();
+		monoBehaviour.Name = "Name";
+		monoBehaviour.OriginalPath = "Assets/SourceFolder/OriginalName.asset";
+
+		FullConfiguration configuration = new();
+		configuration.ExportSettings.AssetPathExportMode = AssetPathExportMode.Default;
+		VirtualFileSystem fileSystem = Export(collection, configuration: configuration);
 
 		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/SourceFolder/Name.asset"));
 	}
@@ -71,6 +90,47 @@ internal class ExportTests
 		VirtualFileSystem fileSystem = Export(collection, configuration: configuration);
 
 		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/SourceFolder/OriginalName.asset"));
+	}
+
+	[Test]
+	public void DefaultExportUsesSourceFilePathWhenOriginalPathIsMissing()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+		collection.FilePath = "D:/Game/Everything is Crab_Data/sharedassets1.assets";
+		collection.Name = "sharedassets1.assets";
+
+		IMonoBehaviour monoBehaviour = collection.CreateMonoBehaviour();
+		monoBehaviour.Name = "Name";
+
+		VirtualFileSystem fileSystem = Export(collection);
+
+		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/Everything is Crab_Data/sharedassets1.assets/MonoBehaviour/Name.asset"));
+	}
+
+	[Test]
+	public void DefaultPrefabExportUsesRootGameObjectSourceFilePathWhenPrefabIsGenerated()
+	{
+		ProcessedAssetCollection sourceCollection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+		sourceCollection.FilePath = "D:/Game/Everything is Crab_Data/sharedassets0.assets";
+		sourceCollection.Name = "sharedassets0.assets";
+
+		IGameObject root = sourceCollection.CreateGameObject();
+		root.Name = "AbilityMiniCard";
+
+		GameBundle bundle = (GameBundle)sourceCollection.Bundle;
+		ProcessedAssetCollection prefabInstanceCollection = bundle.AddNewProcessedCollection("Generated Prefabs", sourceCollection.Version);
+		ProcessedAssetCollection prefabHierarchyCollection = bundle.AddNewProcessedCollection("Prefab Hierarchies", sourceCollection.Version);
+
+		IPrefabInstance prefab = root.CreatePrefabForRoot(prefabInstanceCollection);
+		PrefabHierarchyObject.Create(prefabHierarchyCollection, root, prefab);
+
+		VirtualFileSystem fileSystem = Export(sourceCollection);
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/Everything is Crab_Data/sharedassets0.assets/GameObject/AbilityMiniCard.prefab"));
+			Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/GameObject/AbilityMiniCard.prefab"), Is.False);
+		}
 	}
 
 	[Test]

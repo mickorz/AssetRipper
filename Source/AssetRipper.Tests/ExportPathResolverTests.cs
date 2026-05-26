@@ -76,4 +76,40 @@ internal sealed class ExportPathResolverTests
 			Assert.That(path.Name, Is.EqualTo("Hero"));
 		}
 	}
+
+	[Test]
+	public void PreserveContainerPathUsesSourceFilePathWhenOriginalPathIsMissing()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+		collection.FilePath = "D:/Game/Everything is Crab_Data/sharedassets1.assets";
+		collection.Name = "sharedassets1.assets";
+		IMonoBehaviour asset = collection.CreateMonoBehaviour();
+		asset.Name = "RuntimeName";
+
+		ExportPathInfo path = ExportPathResolver.Resolve(asset, AssetPathExportMode.PreserveContainerPath);
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(path.Directory, Is.EqualTo("Assets/Everything is Crab_Data/sharedassets1.assets/MonoBehaviour"));
+			Assert.That(path.Name, Is.EqualTo("RuntimeName"));
+		}
+	}
+
+	[Test]
+	public void PreserveContainerPathIncludesBundledCollectionNameInSourceFileFallback()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
+		collection.FilePath = "D:/Game/Everything is Crab_Data/StreamingAssets/aa/StandaloneWindows64/example.bundle";
+		collection.Name = "CAB-0123456789abcdef";
+		IMonoBehaviour asset = collection.CreateMonoBehaviour();
+		asset.Name = "RuntimeName";
+
+		ExportPathInfo path = ExportPathResolver.Resolve(asset, AssetPathExportMode.PreserveContainerPath);
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(path.Directory, Is.EqualTo("Assets/Everything is Crab_Data/StreamingAssets/aa/StandaloneWindows64/example.bundle/CAB-0123456789abcdef/MonoBehaviour"));
+			Assert.That(path.Name, Is.EqualTo("RuntimeName"));
+		}
+	}
 }

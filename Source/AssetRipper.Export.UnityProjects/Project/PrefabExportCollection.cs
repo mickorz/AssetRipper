@@ -34,6 +34,11 @@ public class PrefabExportCollection : AssetsExportCollection<IPrefabInstance>
 	public bool EmitPrefabAsset => Prefab is IPrefabMarker;
 	public override string Name => RootGameObject.Name;
 
+	protected override IUnityObjectBase GetSourceFilePathAsset()
+	{
+		return RootGameObject;
+	}
+
 	protected override IUnityObjectBase CreateImporter(IExportContainer container)
 	{
 		if (EmitPrefabAsset)
