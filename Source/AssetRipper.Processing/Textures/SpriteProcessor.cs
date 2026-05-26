@@ -18,6 +18,7 @@ public sealed partial class SpriteProcessor : IAssetProcessor
 	public void Process(GameData gameData)
 	{
 		ObjectFactory factory = new ObjectFactory(gameData);
+		HashSet<ISprite> pendingSprites = [];
 		foreach (IUnityObjectBase asset in gameData.GameBundle
 			.FetchAssetCollections()
 			.Where(c => !SpecialFileNames.IsDefaultResourceOrBuiltinExtra(c.Name))
@@ -33,10 +34,10 @@ public sealed partial class SpriteProcessor : IAssetProcessor
 			else if (asset is ISprite sprite)
 			{
 				ITexture2D? spriteTexture = sprite.TryGetTexture();
-				if (spriteTexture is not null)
+				ISpriteAtlas? atlas = sprite.SpriteAtlasP;
+				if (CanAddSpriteInformation(spriteTexture, sprite) && pendingSprites.Add(sprite))
 				{
 					SpriteInformationObject spriteInformationObject = factory.GetOrCreate(spriteTexture);
-					ISpriteAtlas? atlas = sprite.SpriteAtlasP;
 					spriteInformationObject.AddToDictionary(sprite, atlas);
 				}
 
@@ -48,8 +49,11 @@ public sealed partial class SpriteProcessor : IAssetProcessor
 				{
 					if (TryGetPackedSpriteTexture(atlas, packedSprite, out ITexture2D? spriteTexture))
 					{
-						SpriteInformationObject spriteInformationObject = factory.GetOrCreate(spriteTexture);
-						spriteInformationObject.AddToDictionary(packedSprite, atlas);
+						if (CanAddSpriteInformation(spriteTexture, packedSprite) && pendingSprites.Add(packedSprite))
+						{
+							SpriteInformationObject spriteInformationObject = factory.GetOrCreate(spriteTexture);
+							spriteInformationObject.AddToDictionary(packedSprite, atlas);
+						}
 					}
 				}
 			}
@@ -58,6 +62,13 @@ public sealed partial class SpriteProcessor : IAssetProcessor
 		{
 			asset.SetMainAsset();
 		}
+	}
+
+	private static bool CanAddSpriteInformation([NotNullWhen(true)] ITexture2D? texture, ISprite sprite)
+	{
+		return texture is not null
+			&& texture.MainAsset is null
+			&& sprite.MainAsset is null;
 	}
 
 	private static bool TryGetPackedSpriteTexture(ISpriteAtlas atlas, ISprite packedSprite, [NotNullWhen(true)] out ITexture2D? spriteTexture)

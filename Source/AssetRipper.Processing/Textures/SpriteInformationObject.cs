@@ -33,7 +33,7 @@ public sealed class SpriteInformationObject : AssetGroup, INamed
 			foreach ((ISprite sprite, ISpriteAtlas? atlas) in dictionary)
 			{
 				yield return sprite;
-				if (atlas is not null)
+				if (atlas is not null && (atlas.MainAsset is null || atlas.MainAsset == this))
 				{
 					yield return atlas;
 				}
