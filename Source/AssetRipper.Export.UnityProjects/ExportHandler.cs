@@ -14,10 +14,26 @@ using AssetRipper.Processing.Editor;
 using AssetRipper.Processing.Prefabs;
 using AssetRipper.Processing.Scenes;
 using AssetRipper.Processing.ScriptableObject;
+using AssetRipper.Processing.Spine;
 using AssetRipper.Processing.Textures;
 
 namespace AssetRipper.Export.UnityProjects;
 
+/*
+ ExportHandler 的导出流程
+
+ Unity 工程导出流程是这样的：
+
+ Load()
+     └─> 读取游戏资源
+ Process()
+     ├─> 执行程序集处理器
+     └─> 执行资源处理器
+ Export()
+     ├─> 应用导出设置
+     ├─> 写出 Unity 工程
+     └─> 执行后处理导出器
+*/
 public class ExportHandler
 {
 	protected FullConfiguration Settings { get; }
@@ -81,6 +97,7 @@ public class ExportHandler
 		// Asset processors
 		yield return new SceneDefinitionProcessor();
 		yield return new OriginalPathProcessor(Settings.ProcessingSettings.BundledAssetsExportMode);
+		yield return new SpineResourceProcessor();
 		yield return new MainAssetProcessor();
 		yield return new AnimatorControllerProcessor();
 		yield return new AudioMixerProcessor();

@@ -3,6 +3,17 @@ using AssetRipper.Export.Configuration;
 
 namespace AssetRipper.Export.UnityProjects.Paths;
 
+/*
+ ExportPathResolver 的路径解析流程
+
+ 导出路径解析流程是这样的：
+
+ Resolve()
+     ├─> 优先使用显式覆盖路径
+     ├─> 尝试使用资源原始路径
+     ├─> 尝试使用源文件路径
+     └─> 使用兜底目录和名称
+*/
 public static class ExportPathResolver
 {
 	private const string AssetsDirectory = "Assets";
@@ -10,6 +21,11 @@ public static class ExportPathResolver
 
 	public static ExportPathInfo Resolve(IUnityObjectBase asset, AssetPathExportMode mode, IUnityObjectBase? sourceFilePathAsset = null)
 	{
+		if (HasOverridePath(asset))
+		{
+			return ResolveFallback(asset, true);
+		}
+
 		if (mode is AssetPathExportMode.PreserveContainerPath
 			&& !string.IsNullOrEmpty(asset.OriginalPath)
 			&& TryResolveOriginalPath(asset.OriginalPath, out ExportPathInfo originalPath))
@@ -25,6 +41,11 @@ public static class ExportPathResolver
 
 		bool ignoreOriginalDirectory = mode is AssetPathExportMode.PreserveContainerPath && !string.IsNullOrEmpty(asset.OriginalPath);
 		return ResolveFallback(asset, ignoreOriginalDirectory);
+	}
+
+	private static bool HasOverridePath(IUnityObjectBase asset)
+	{
+		return asset.OverrideDirectory is not null || asset.OverrideName is not null;
 	}
 
 	private static bool TryResolveOriginalPath(string originalPath, out ExportPathInfo exportPath)
