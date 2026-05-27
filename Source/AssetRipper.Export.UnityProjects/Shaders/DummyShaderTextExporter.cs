@@ -4,6 +4,7 @@ using AssetRipper.SourceGenerated.Extensions;
 using AssetRipper.SourceGenerated.Extensions.Enums.Shader.SerializedShader;
 using AssetRipper.SourceGenerated.Subclasses.SerializedProperties;
 using AssetRipper.SourceGenerated.Subclasses.SerializedProperty;
+using System.Text;
 
 namespace AssetRipper.Export.UnityProjects.Shaders;
 
@@ -37,6 +38,12 @@ public sealed class DummyShaderTextExporter : ShaderExporterBase
 	public override bool Export(IExportContainer container, IUnityObjectBase asset, string path, FileSystem fileSystem)
 	{
 		return ExportShader((IShader)asset, path, fileSystem);
+	}
+
+	internal override bool TryExportForContentHash(IShader shader, Stream stream)
+	{
+		using InvariantStreamWriter writer = new(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+		return ExportShader(shader, writer);
 	}
 
 	public static bool ExportShader(IShader shader, string path, FileSystem fileSystem)

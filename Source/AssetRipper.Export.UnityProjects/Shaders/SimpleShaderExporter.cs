@@ -28,6 +28,12 @@ public class SimpleShaderExporter : ShaderExporterBase
 		return true;
 	}
 
+	internal override bool TryExportForContentHash(IShader shader, Stream stream)
+	{
+		stream.Write(shader.Script!.Data);
+		return true;
+	}
+
 	private static bool HasDecompiledShaderText(string text)
 	{
 		return !string.IsNullOrEmpty(text)

@@ -1,5 +1,6 @@
 ﻿using AssetRipper.Assets;
 using AssetRipper.Assets.Bundles;
+using AssetRipper.Export.UnityProjects.Shaders;
 using AssetRipper.Import.Configuration;
 using AssetRipper.Import.Logging;
 using AssetRipper.SourceGenerated;
@@ -106,12 +107,14 @@ public sealed partial class ProjectExporter
 	{
 		List<IExportCollection> collections = new();
 		HashSet<IUnityObjectBase> queued = new();
+		Dictionary<string, ShaderExportCollection> shaderCollectionsByContent = [];
 
 		foreach (IUnityObjectBase asset in fileCollection.FetchAssets())
 		{
 			if (!queued.Contains(asset))
 			{
 				IExportCollection collection = CreateCollection(asset);
+				collection = DeduplicateShaderCollection(collection, shaderCollectionsByContent);
 				foreach (IUnityObjectBase element in collection.Assets)
 				{
 					queued.Add(element);
@@ -121,5 +124,33 @@ public sealed partial class ProjectExporter
 		}
 
 		return collections;
+	}
+
+	private static IExportCollection DeduplicateShaderCollection(
+		IExportCollection collection,
+		Dictionary<string, ShaderExportCollection> shaderCollectionsByContent)
+	{
+		if (collection is not ShaderExportCollection shaderCollection)
+		{
+			return collection;
+		}
+
+		string? contentHash = shaderCollection.GetExportContentHash();
+		if (contentHash is null)
+		{
+			return collection;
+		}
+
+		if (shaderCollectionsByContent.TryGetValue(contentHash, out ShaderExportCollection? existingCollection))
+		{
+			return new SingleRedirectExportCollection(
+				shaderCollection.Asset,
+				ExportIdHandler.GetMainExportID(existingCollection.Asset),
+				existingCollection.GUID,
+				AssetType.Meta);
+		}
+
+		shaderCollectionsByContent.Add(contentHash, shaderCollection);
+		return collection;
 	}
 }

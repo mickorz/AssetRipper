@@ -5,6 +5,11 @@ namespace AssetRipper.Export.UnityProjects.Shaders;
 
 public abstract class ShaderExporterBase : BinaryAssetExporter
 {
+	internal virtual bool TryExportForContentHash(IShader shader, Stream stream)
+	{
+		return false;
+	}
+
 	public override bool TryCreateCollection(IUnityObjectBase asset, [NotNullWhen(true)] out IExportCollection? exportCollection)
 	{
 		if (asset is IShader shader)

@@ -4,6 +4,7 @@ using AssetRipper.Assets.Generics;
 using AssetRipper.SourceGenerated.Classes.ClassID_1007;
 using AssetRipper.SourceGenerated.Classes.ClassID_48;
 using AssetRipper.SourceGenerated.Subclasses.PPtr_Texture;
+using System.Security.Cryptography;
 
 namespace AssetRipper.Export.UnityProjects.Shaders;
 
@@ -11,6 +12,23 @@ public class ShaderExportCollection : AssetExportCollection<IShader>
 {
 	public ShaderExportCollection(ShaderExporterBase assetExporter, IShader asset) : base(assetExporter, asset)
 	{
+	}
+
+	internal string? GetExportContentHash()
+	{
+		if (exportContentHashInitialized)
+		{
+			return exportContentHash;
+		}
+
+		exportContentHashInitialized = true;
+		using MemoryStream stream = new();
+		if (AssetExporter is ShaderExporterBase shaderExporter
+			&& shaderExporter.TryExportForContentHash(Asset, stream))
+		{
+			exportContentHash = Convert.ToHexString(SHA256.HashData(stream.ToArray()));
+		}
+		return exportContentHash;
 	}
 
 	protected override IUnityObjectBase CreateImporter(IExportContainer container)
@@ -32,4 +50,7 @@ public class ShaderExportCollection : AssetExportCollection<IShader>
 		}
 		return importer;
 	}
+
+	private bool exportContentHashInitialized;
+	private string? exportContentHash;
 }

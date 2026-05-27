@@ -14,6 +14,7 @@ using AssetRipper.SourceGenerated.Classes.ClassID_1;
 using AssetRipper.SourceGenerated.Classes.ClassID_1001;
 using AssetRipper.SourceGenerated.Classes.ClassID_114;
 using AssetRipper.SourceGenerated.Classes.ClassID_115;
+using AssetRipper.SourceGenerated.Classes.ClassID_48;
 using AssetRipper.SourceGenerated.Classes.ClassID_43;
 using AssetRipper.SourceGenerated.Extensions;
 using NUnit.Framework.Internal;
@@ -189,6 +190,40 @@ internal class ExportTests
 	}
 
 	[Test]
+	public void ShaderContentDedupExportsOneShaderWhenGeneratedTextMatches()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_5_4);
+		CreateTextShader(collection, "SharedShader", "Shader \"Example/Shared\" { SubShader { } }");
+		CreateTextShader(collection, "SharedShader", "Shader \"Example/Shared\" { SubShader { } }");
+
+		VirtualFileSystem fileSystem = Export(collection);
+
+		string[] shaderFiles = GetExportedShaderFiles(fileSystem);
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(shaderFiles, Has.Length.EqualTo(1));
+			Assert.That(shaderFiles[0], Is.EqualTo("/output/ExportedProject/Assets/Shader/SharedShader.shader"));
+		}
+	}
+
+	[Test]
+	public void ShaderContentDedupKeepsMultipleShadersWhenGeneratedTextDiffers()
+	{
+		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_5_4);
+		CreateTextShader(collection, "SharedShader", "Shader \"Example/Shared\" { SubShader { Tags { \"Variant\" = \"A\" } } }");
+		CreateTextShader(collection, "SharedShader", "Shader \"Example/Shared\" { SubShader { Tags { \"Variant\" = \"B\" } } }");
+
+		VirtualFileSystem fileSystem = Export(collection);
+
+		string[] shaderFiles = GetExportedShaderFiles(fileSystem);
+		Assert.That(shaderFiles, Is.EquivalentTo(new[]
+		{
+			"/output/ExportedProject/Assets/Shader/SharedShader.shader",
+			"/output/ExportedProject/Assets/Shader/SharedShader_0.shader",
+		}));
+	}
+
+	[Test]
 	public void CompressedMeshIsExported()
 	{
 		ProcessedAssetCollection collection = AssetCreator.CreateCollection(UnityVersion.V_2022);
@@ -316,6 +351,22 @@ internal class ExportTests
 	private static MonoManager CreateAssemblyManager()
 	{
 		return new MonoManager((str) => { });
+	}
+
+	private static IShader CreateTextShader(ProcessedAssetCollection collection, string name, string script)
+	{
+		IShader shader = collection.CreateShader();
+		shader.Name_R = name;
+		shader.Script = script;
+		return shader;
+	}
+
+	private static string[] GetExportedShaderFiles(VirtualFileSystem fileSystem)
+	{
+		return fileSystem.Directory
+			.EnumerateFiles("/output/ExportedProject/Assets", "*.shader", SearchOption.AllDirectories)
+			.Order(StringComparer.Ordinal)
+			.ToArray();
 	}
 
 	private static ScriptExporter CreateScriptExporter(ScriptExportMode scriptExportMode, List<string>? selectedAssemblies = null)
