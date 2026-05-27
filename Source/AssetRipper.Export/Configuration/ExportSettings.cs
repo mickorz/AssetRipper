@@ -22,7 +22,12 @@ public sealed record class ExportSettings
 	/// <summary>
 	/// How are MonoScripts exported? Recommended: Decompiled
 	/// </summary>
-	public ScriptExportMode ScriptExportMode { get; set; } = ScriptExportMode.Hybrid;
+	public ScriptExportMode ScriptExportMode { get; set; } = ScriptExportMode.SelectedDlls;
+
+	/// <summary>
+	/// Assemblies selected by the web UI for script decompilation. Null means use the default candidate selection.
+	/// </summary>
+	public List<string>? SelectedScriptAssemblies { get; set; }
 
 	/// <summary>
 	/// The C# language version of decompiled scripts.
@@ -66,6 +71,7 @@ public sealed record class ExportSettings
 		Logger.Info(LogCategory.General, $"{nameof(ImageExportFormat)}: {ImageExportFormat}");
 		Logger.Info(LogCategory.General, $"{nameof(LightmapTextureExportFormat)}: {LightmapTextureExportFormat}");
 		Logger.Info(LogCategory.General, $"{nameof(ScriptExportMode)}: {ScriptExportMode}");
+		Logger.Info(LogCategory.General, $"{nameof(SelectedScriptAssemblies)}: {(SelectedScriptAssemblies is null ? "Default" : SelectedScriptAssemblies.Count)}");
 		Logger.Info(LogCategory.General, $"{nameof(ScriptLanguageVersion)}: {ScriptLanguageVersion}");
 		Logger.Info(LogCategory.General, $"{nameof(ShaderExportMode)}: {ShaderExportMode}");
 		Logger.Info(LogCategory.General, $"{nameof(SpriteExportMode)}: {SpriteExportMode}");

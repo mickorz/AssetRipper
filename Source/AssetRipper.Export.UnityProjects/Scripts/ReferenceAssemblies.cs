@@ -19,6 +19,30 @@ public static class ReferenceAssemblies
 			or "Assembly-UnityScript-firstpass";
 	}
 
+	public static bool IsUnityOrSystemAssembly(string assemblyName)
+	{
+		assemblyName = RemoveDllExtension(assemblyName);
+		return assemblyName is "mcs" or "mscorlib" or "netstandard"
+			|| assemblyName.StartsWith("Unity", StringComparison.Ordinal)
+			|| assemblyName.StartsWith("UnityEngine", StringComparison.Ordinal)
+			|| assemblyName.StartsWith("UnityEditor", StringComparison.Ordinal)
+			|| assemblyName.StartsWith("System", StringComparison.Ordinal)
+			|| assemblyName.StartsWith("Microsoft", StringComparison.Ordinal)
+			|| assemblyName.StartsWith("Mono.", StringComparison.Ordinal);
+	}
+
+	public static bool IsDefaultSelectedAssembly(string assemblyName)
+	{
+		return IsPredefinedAssembly(RemoveDllExtension(assemblyName));
+	}
+
+	private static string RemoveDllExtension(string assemblyName)
+	{
+		return assemblyName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+			? assemblyName[..^4]
+			: assemblyName;
+	}
+
 	public static Dictionary<string, UnityGuid> GetReferenceAssemblies(IAssemblyManager assemblyManager, UnityVersion version)
 	{
 		Debug.Assert(assemblyDataFile.Assemblies.Count > 0);

@@ -54,6 +54,7 @@ public static class GameFileLoader
 		Reset();
 		Settings.LogConfigurationValues();
 		GameData = ExportHandler.LoadAndProcess(paths, LocalFileSystem.Instance);
+		Settings.ExportSettings.SelectedScriptAssemblies = null;
 	}
 
 	public static async Task ExportUnityProject(string path)

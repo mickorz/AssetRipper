@@ -12,6 +12,7 @@ public sealed class ScriptExportModeDropDownSetting : DropDownSetting<ScriptExpo
 	{
 		ScriptExportMode.Decompiled => Localization.ScriptExportFormatDecompiled,
 		ScriptExportMode.Hybrid => Localization.ScriptExportFormatHybrid,
+		ScriptExportMode.SelectedDlls => "Selected DLLs",
 		ScriptExportMode.DllExportWithRenaming => Localization.ScriptExportFormatDllWithRenaming,
 		ScriptExportMode.DllExportWithoutRenaming => Localization.ScriptExportFormatDllWithoutRenaming,
 		_ => base.GetDisplayName(value),
@@ -21,6 +22,7 @@ public sealed class ScriptExportModeDropDownSetting : DropDownSetting<ScriptExpo
 	{
 		ScriptExportMode.Decompiled => Localization.ScriptExportFormatDecompiledDescription,
 		ScriptExportMode.Hybrid => Localization.ScriptExportFormatHybridDescription,
+		ScriptExportMode.SelectedDlls => "Decompile the DLLs selected on the export page. Unselected DLLs are saved as plugins.",
 		ScriptExportMode.DllExportWithRenaming => Localization.NotImplementedYet,
 		ScriptExportMode.DllExportWithoutRenaming => Localization.ScriptExportFormatDllWithoutRenamingDescription,
 		_ => base.GetDescription(value),

@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a script export mode that decompiles game and third-party DLLs while excluding Unity and system assemblies.
+**Goal:** Add a Web-selectable DLL export mode that decompiles selected game and third-party assemblies.
 
-**Architecture:** Keep the current `Hybrid` behavior intact and add a new explicit export mode. The decision stays centralized in `ScriptExporter.GetExportType`, with reusable assembly classification in `ReferenceAssemblies`.
+**Architecture:** Keep existing script export modes intact and add a new `SelectedDlls` mode. The Web export form owns the selected assembly list after a game is loaded, and `ScriptExporter.GetExportType` remains the single decision point for decompile versus save.
 
-**Tech Stack:** C#, NUnit, AssetRipper export pipeline, AsmResolver assembly metadata.
+**Tech Stack:** C#, ASP.NET minimal endpoints, AssetRipper Web HTML helpers, NUnit, AssetRipper export pipeline.
 
 ---
 
@@ -17,19 +17,27 @@
 
 **Step 1: Write the failing tests**
 
-Add tests that configure `ScriptExportMode.MultiDllDecompiled` and verify:
+Add tests for:
 
 ```csharp
-Assert.That(exporter.GetExportType("MoreMountains.Tools"), Is.EqualTo(AssemblyExportType.Decompile));
-Assert.That(exporter.GetExportType("AK.Wwise.Unity.API"), Is.EqualTo(AssemblyExportType.Decompile));
-Assert.That(exporter.GetExportType("Unity.Addressables"), Is.Not.EqualTo(AssemblyExportType.Decompile));
-Assert.That(exporter.GetExportType("System.Runtime.CompilerServices.Unsafe"), Is.Not.EqualTo(AssemblyExportType.Decompile));
+Assert.That(new FullConfiguration().ExportSettings.ScriptExportMode, Is.EqualTo(ScriptExportMode.SelectedDlls));
 ```
 
-Also add a default settings test:
+Default candidate behavior:
 
 ```csharp
-Assert.That(new FullConfiguration().ExportSettings.ScriptExportMode, Is.EqualTo(ScriptExportMode.MultiDllDecompiled));
+ScriptExporter exporter = CreateScriptExporter(ScriptExportMode.SelectedDlls);
+Assert.That(exporter.GetExportType("Assembly-CSharp"), Is.EqualTo(AssemblyExportType.Decompile));
+Assert.That(exporter.GetExportType("MoreMountains.Tools"), Is.Not.EqualTo(AssemblyExportType.Decompile));
+Assert.That(exporter.GetExportType("Unity.Addressables"), Is.Not.EqualTo(AssemblyExportType.Decompile));
+```
+
+Explicit Web selection behavior:
+
+```csharp
+ScriptExporter exporter = CreateScriptExporter(ScriptExportMode.SelectedDlls, ["MoreMountains.Tools"]);
+Assert.That(exporter.GetExportType("MoreMountains.Tools"), Is.EqualTo(AssemblyExportType.Decompile));
+Assert.That(exporter.GetExportType("Assembly-CSharp"), Is.Not.EqualTo(AssemblyExportType.Decompile));
 ```
 
 **Step 2: Run tests to verify failure**
@@ -37,12 +45,12 @@ Assert.That(new FullConfiguration().ExportSettings.ScriptExportMode, Is.EqualTo(
 Run:
 
 ```powershell
-& 'D:\CrackALL\dotnet-sdk-10\dotnet.exe' test Source\AssetRipper.Tests\AssetRipper.Tests.csproj --no-restore --filter "MultiDll|DefaultScriptExport" --verbosity minimal
+& 'D:\CrackALL\dotnet-sdk-10\dotnet.exe' test Source\AssetRipper.Tests\AssetRipper.Tests.csproj --no-restore --filter "DefaultScriptExportModeUsesSelectedDlls|SelectedDllsExportMode" --verbosity minimal
 ```
 
-Expected: compilation fails because `MultiDllDecompiled` does not exist.
+Expected: compilation fails until `SelectedDlls` and `SelectedScriptAssemblies` exist.
 
-### Task 2: Add Export Mode And Filtering
+### Task 2: Add Export Mode And Selection Logic
 
 **Files:**
 - Modify: `Source/AssetRipper.Export/Configuration/ScriptExportMode.cs`
@@ -50,55 +58,66 @@ Expected: compilation fails because `MultiDllDecompiled` does not exist.
 - Modify: `Source/AssetRipper.Export.UnityProjects/Scripts/ReferenceAssemblies.cs`
 - Modify: `Source/AssetRipper.Export.UnityProjects/Scripts/ScriptExporter.cs`
 
-**Step 1: Add the enum value**
+**Step 1: Add enum value**
 
-Add `MultiDllDecompiled` to `ScriptExportMode`.
+Add `SelectedDlls` to `ScriptExportMode`.
 
-**Step 2: Add classification helper**
+**Step 2: Add selected list**
 
-Add `ReferenceAssemblies.IsUnityOrSystemAssembly(string assemblyName)` using prefix and exact-name checks for Unity and system assemblies.
+Add nullable `List<string>? SelectedScriptAssemblies` to `ExportSettings`. Null means use the default candidate selection. Empty list means decompile none.
 
-**Step 3: Update export decision**
+**Step 3: Add default candidate helper**
 
-In `ScriptExporter.GetExportType`, add handling:
+Add `ReferenceAssemblies.IsDefaultSelectedAssembly(string assemblyName)`. It returns true only for predefined Unity game script assemblies such as `Assembly-CSharp`.
+
+**Step 4: Update export decision**
+
+In `ScriptExporter.GetExportType`, handle `SelectedDlls`:
 
 ```csharp
-else if (ExportMode is ScriptExportMode.MultiDllDecompiled)
-{
-	return ReferenceAssemblies.IsUnityOrSystemAssembly(assemblyName)
-		? AssemblyExportType.Save
-		: AssemblyExportType.Decompile;
-}
+return IsSelectedForDecompilation(assemblyName)
+	? AssemblyExportType.Decompile
+	: AssemblyExportType.Save;
 ```
 
-**Step 4: Update default**
+**Step 5: Run focused tests**
 
-Set `ExportSettings.ScriptExportMode` default to `ScriptExportMode.MultiDllDecompiled`.
+Run the command from Task 1. Expected: tests pass.
 
-**Step 5: Run tests**
-
-Run the same focused test command. Expected: tests pass.
-
-### Task 3: Add UI Text
+### Task 3: Add Web DLL Filter
 
 **Files:**
-- Modify: `Source/AssetRipper.GUI.Web/Pages/Settings/DropDown/ScriptExportModeDropDownSetting.cs`
-- Modify: `Localizations/en_US.json`
-- Modify: `Localizations/zh_Hans.json`
+- Modify: `Source/AssetRipper.GUI.Web/Pages/CommandsPage.cs`
+- Modify: `Source/AssetRipper.GUI.Web/Pages/Commands.cs`
+- Modify: `Source/AssetRipper.GUI.Web/GameFileLoader.cs`
 
-**Step 1: Add display mapping**
+**Step 1: Render DLL checkboxes**
 
-Map `ScriptExportMode.MultiDllDecompiled` to a new localization key.
+On the loaded `Commands` page, inside the Unity project export form:
 
-**Step 2: Add descriptions**
+- Add hidden `UseScriptAssemblySelection=true`
+- Render one checkbox per `GameFileLoader.AssemblyManager.GetAssemblies()`
+- Checkbox name: `SelectedScriptAssemblies`
+- Default checked state uses `ReferenceAssemblies.IsDefaultSelectedAssembly`
 
-English display text: `Multi DLL Decompiled`
+**Step 2: Parse submitted DLLs**
 
-Chinese display text: `多 DLL 反编译`
+In `Commands.ExportUnityProject`, if `UseScriptAssemblySelection` is present:
 
-Descriptions should state that game and third-party assemblies are decompiled while Unity and system assemblies are excluded.
+- Set `ExportSettings.ScriptExportMode = ScriptExportMode.SelectedDlls`
+- Set `ExportSettings.SelectedScriptAssemblies` to the posted values
+- If no values are posted, set it to an empty list
 
-**Step 3: Build GUI**
+**Step 3: Reset selection on new load**
+
+After loading a new game, set `SelectedScriptAssemblies = null` so each game starts from default candidates.
+
+### Task 4: Build And Export Verification
+
+**Files:**
+- No source file changes expected.
+
+**Step 1: Build GUI**
 
 Run:
 
@@ -108,35 +127,30 @@ Run:
 
 Expected: build succeeds.
 
-### Task 4: Verify With Current Game Export
-
-**Files:**
-- No source file changes expected.
-
-**Step 1: Restart local GUI**
+**Step 2: Restart local GUI**
 
 Stop only the current AssetRipper process listening on port `6080`, then start the Debug GUI DLL on port `6080`.
 
-**Step 2: Import game**
+**Step 3: Import and inspect Web page**
 
-Run:
+Load:
 
 ```powershell
 Invoke-WebRequest -Uri 'http://127.0.0.1:6080/LoadFolder' -Method Post -Body @{ Path = 'D:\Stream\steamapps\common\Everything is Crab' } -UseBasicParsing -TimeoutSec 900
 ```
 
-**Step 3: Export project**
+Open `http://127.0.0.1:6080/Commands` and verify the DLL checkbox list appears.
+
+**Step 4: Export and inspect output**
 
 Export to `D:\CrackALL\万物皆可蟹\破解资源1`.
 
-**Step 4: Check output**
-
-Verify that `Assets/Scripts` contains more directories than `Assembly-CSharp`, and that Unity/System assemblies are not decompiled into `Assets/Scripts`.
+Verify the default export only decompiles predefined game script assemblies. Then manually select one third-party DLL on the Web page, export again, and verify `Assets/Scripts/<程序集名>` exists for the selected DLL.
 
 ### Task 5: Commit And Push
 
 **Files:**
-- All modified source, tests, localization, and plan files.
+- All modified source, tests, and plan files.
 
 **Step 1: Final checks**
 
@@ -153,7 +167,7 @@ Run:
 
 ```powershell
 git add .
-git commit -m "feat: decompile game and third-party dlls"
+git commit -m "feat: add selectable dll script export"
 ```
 
 **Step 3: Push**

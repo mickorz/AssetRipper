@@ -19,11 +19,15 @@ public class ScriptExporter : IAssetExporter
 			FullyQualifiedTypeNames = configuration.ExportSettings.ScriptTypesFullyQualified,
 		};
 		ExportMode = configuration.ExportSettings.ScriptExportMode;
+		SelectedScriptAssemblies = configuration.ExportSettings.SelectedScriptAssemblies is { } selectedAssemblies
+			? selectedAssemblies.Select(SpecialFileNames.RemoveAssemblyFileExtension).ToHashSet(StringComparer.OrdinalIgnoreCase)
+			: null;
 		ReferenceAssemblyDictionary = ReferenceAssemblies.GetReferenceAssemblies(AssemblyManager, configuration.Version);
 	}
 
 	public IAssemblyManager AssemblyManager { get; }
 	public ScriptExportMode ExportMode { get; }
+	private HashSet<string>? SelectedScriptAssemblies { get; }
 	internal ScriptDecompiler Decompiler { get; }
 	internal Dictionary<string, UnityGuid> ReferenceAssemblyDictionary { get; }
 	private bool HasDecompiled { get; set; } = false;
@@ -93,10 +97,24 @@ public class ScriptExporter : IAssetExporter
 				? AssemblyExportType.Decompile
 				: AssemblyExportType.Save;
 		}
+		else if (ExportMode is ScriptExportMode.SelectedDlls)
+		{
+			return IsSelectedForDecompilation(assemblyName)
+				? AssemblyExportType.Decompile
+				: AssemblyExportType.Save;
+		}
 		else
 		{
 			return AssemblyExportType.Save;
 		}
+	}
+
+	private bool IsSelectedForDecompilation(string assemblyName)
+	{
+		string normalizedAssemblyName = SpecialFileNames.RemoveAssemblyFileExtension(assemblyName);
+		return SelectedScriptAssemblies is null
+			? ReferenceAssemblies.IsDefaultSelectedAssembly(normalizedAssemblyName)
+			: SelectedScriptAssemblies.Contains(normalizedAssemblyName);
 	}
 
 	AssetType IAssetExporter.ToExportType(IUnityObjectBase asset) => AssetType.Meta;

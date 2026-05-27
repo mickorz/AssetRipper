@@ -3,6 +3,7 @@ using AssetRipper.Assets.Bundles;
 using AssetRipper.Assets.Collections;
 using AssetRipper.Export.Configuration;
 using AssetRipper.Export.UnityProjects;
+using AssetRipper.Export.UnityProjects.Scripts;
 using AssetRipper.Import.Structure.Assembly.Managers;
 using AssetRipper.IO.Files;
 using AssetRipper.Primitives;
@@ -200,6 +201,52 @@ internal class ExportTests
 		Assert.That(fileSystem.File.Exists("/output/ExportedProject/Assets/Mesh/Mesh.asset"));
 	}
 
+	[Test]
+	public void DefaultScriptExportModeUsesSelectedDlls()
+	{
+		Assert.That(new FullConfiguration().ExportSettings.ScriptExportMode, Is.EqualTo(ScriptExportMode.SelectedDlls));
+	}
+
+	[TestCase("Assembly-CSharp")]
+	[TestCase("Assembly-CSharp-firstpass")]
+	[TestCase("Assembly-CSharp-Editor")]
+	[TestCase("Assembly-UnityScript")]
+	public void SelectedDllsExportModeDecompilesPredefinedAssembliesWhenNoSelectionExists(string assemblyName)
+	{
+		ScriptExporter exporter = CreateScriptExporter(ScriptExportMode.SelectedDlls);
+
+		Assert.That(exporter.GetExportType(assemblyName), Is.EqualTo(AssemblyExportType.Decompile));
+	}
+
+	[TestCase("MoreMountains.Tools")]
+	[TestCase("AK.Wwise.Unity.API")]
+	[TestCase("Newtonsoft.Json")]
+	[TestCase("Unity.Addressables")]
+	[TestCase("UnityEngine.UI")]
+	[TestCase("System.Runtime.CompilerServices.Unsafe")]
+	[TestCase("Microsoft.CSharp")]
+	[TestCase("mcs")]
+	[TestCase("netstandard")]
+	public void SelectedDllsExportModeSavesNonPredefinedAssembliesByDefault(string assemblyName)
+	{
+		ScriptExporter exporter = CreateScriptExporter(ScriptExportMode.SelectedDlls);
+
+		Assert.That(exporter.GetExportType(assemblyName), Is.Not.EqualTo(AssemblyExportType.Decompile));
+	}
+
+	[Test]
+	public void SelectedDllsExportModeUsesExplicitAssemblySelection()
+	{
+		ScriptExporter exporter = CreateScriptExporter(ScriptExportMode.SelectedDlls, ["MoreMountains.Tools"]);
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(exporter.GetExportType("MoreMountains.Tools"), Is.EqualTo(AssemblyExportType.Decompile));
+			Assert.That(exporter.GetExportType("Assembly-CSharp"), Is.Not.EqualTo(AssemblyExportType.Decompile));
+			Assert.That(exporter.GetExportType("AK.Wwise.Unity.API"), Is.Not.EqualTo(AssemblyExportType.Decompile));
+		}
+	}
+
 	static readonly (string AssemblyName, string AssemblyGuid)[] AssemblyGuidTestCases =
 	[
 		("UnityEngine.UI", "f5f67c52d1564df4a8936ccd202a3bd8"),
@@ -269,5 +316,14 @@ internal class ExportTests
 	private static MonoManager CreateAssemblyManager()
 	{
 		return new MonoManager((str) => { });
+	}
+
+	private static ScriptExporter CreateScriptExporter(ScriptExportMode scriptExportMode, List<string>? selectedAssemblies = null)
+	{
+		FullConfiguration configuration = new();
+		configuration.SetProjectSettings(UnityVersion.V_2022);
+		configuration.ExportSettings.ScriptExportMode = scriptExportMode;
+		configuration.ExportSettings.SelectedScriptAssemblies = selectedAssemblies;
+		return new ScriptExporter(CreateAssemblyManager(), configuration);
 	}
 }

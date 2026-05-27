@@ -1,4 +1,7 @@
 ﻿using AssetRipper.NativeDialogs;
+using AssetRipper.Export.Configuration;
+using AssetRipper.Import.Logging;
+using AssetRipper.IO.Files;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -9,6 +12,8 @@ public static class Commands
 {
 	private const string RootPath = "/";
 	private const string CommandsPath = "/Commands";
+	public const string UseScriptAssemblySelectionFormKey = "UseScriptAssemblySelection";
+	public const string SelectedScriptAssembliesFormKey = nameof(ExportSettings.SelectedScriptAssemblies);
 
 	/// <summary>
 	/// For documentation purposes
@@ -107,6 +112,7 @@ public static class Commands
 			{
 				bool createSubfolder = TryGetCreateSubfolder(form);
 				path = MaybeAppendTimestampedSubfolder(path, createSubfolder);
+				ApplyScriptAssemblySelection(form);
 				await GameFileLoader.ExportUnityProject(path);
 			}
 			return null;
@@ -149,6 +155,25 @@ public static class Commands
 		}
 
 		return path;
+	}
+
+	private static void ApplyScriptAssemblySelection(IFormCollection form)
+	{
+		if (!form.ContainsKey(UseScriptAssemblySelectionFormKey))
+		{
+			return;
+		}
+
+		GameFileLoader.Settings.ExportSettings.ScriptExportMode = ScriptExportMode.SelectedDlls;
+		GameFileLoader.Settings.ExportSettings.SelectedScriptAssemblies = form.TryGetValue(SelectedScriptAssembliesFormKey, out StringValues values)
+			? values
+				.Where(static value => !string.IsNullOrWhiteSpace(value))
+				.Select(static value => SpecialFileNames.RemoveAssemblyFileExtension(value!))
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.Order(StringComparer.OrdinalIgnoreCase)
+				.ToList()
+			: [];
+		Logger.Info(LogCategory.Export, $"本次脚本反编译选择 DLL 数量: {GameFileLoader.Settings.ExportSettings.SelectedScriptAssemblies.Count}");
 	}
 
 	public readonly struct Reset : ICommand

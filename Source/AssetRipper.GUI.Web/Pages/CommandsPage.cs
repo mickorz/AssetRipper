@@ -1,5 +1,7 @@
 ﻿using AssetRipper.GUI.Web.Paths;
 
+using AssetRipper.Export.UnityProjects.Scripts;
+
 namespace AssetRipper.GUI.Web.Pages;
 
 public sealed class CommandsPage : VuePage
@@ -64,6 +66,9 @@ public sealed class CommandsPage : VuePage
 				{
 					new Input(writer).WithType("hidden").WithName("Path").WithCustomAttribute("v-model", "export_path").Close();
 					new Input(writer).WithType("hidden").WithName("CreateSubfolder").WithCustomAttribute("v-model", "create_subfolder").Close();
+					new Input(writer).WithType("hidden").WithName(Commands.UseScriptAssemblySelectionFormKey).WithValue("true").Close();
+
+					WriteScriptAssemblySelection(writer);
 
 					new Button(writer).WithCustomAttribute("v-if", "export_path === '' || export_path !== export_path.trim()").WithClass("btn btn-primary").WithCustomAttribute("disabled").Close(Localization.ExportUnityProject);
 					new Input(writer).WithCustomAttribute("v-else-if", "export_path_has_files").WithType("submit").WithClass("btn btn-danger").WithValue(Localization.ExportUnityProject).Close();
@@ -91,6 +96,62 @@ public sealed class CommandsPage : VuePage
 				}
 			}
 		}
+	}
+
+	private static void WriteScriptAssemblySelection(TextWriter writer)
+	{
+		string[] assemblyNames = GameFileLoader.AssemblyManager
+			.GetAssemblies()
+			.Select(static assembly => assembly.Name?.ToString())
+			.Where(static name => !string.IsNullOrWhiteSpace(name))
+			.Select(static name => name!)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.Order(StringComparer.OrdinalIgnoreCase)
+			.ToArray();
+		if (assemblyNames.Length == 0)
+		{
+			return;
+		}
+
+		HashSet<string>? selectedAssemblies = GameFileLoader.Settings.ExportSettings.SelectedScriptAssemblies is { } selected
+			? selected.ToHashSet(StringComparer.OrdinalIgnoreCase)
+			: null;
+
+		using (new Div(writer).WithClass("border rounded p-3 my-3").End())
+		{
+			new H3(writer).Close("DLL Export Filter");
+			using (new Div(writer).WithClass("row row-cols-1 row-cols-md-2 row-cols-xl-3").End())
+			{
+				foreach (string assemblyName in assemblyNames)
+				{
+					bool isChecked = selectedAssemblies?.Contains(assemblyName) ?? ReferenceAssemblies.IsDefaultSelectedAssembly(assemblyName);
+					string id = $"scriptAssembly_{CreateSafeId(assemblyName)}";
+					using (new Div(writer).WithClass("col").End())
+					{
+						using (new Div(writer).WithClass("form-check").End())
+						{
+							new Input(writer)
+								.WithClass("form-check-input")
+								.WithType("checkbox")
+								.WithName(Commands.SelectedScriptAssembliesFormKey)
+								.WithValue(assemblyName.ToHtml())
+								.WithId(id)
+								.MaybeWithChecked(isChecked)
+								.Close();
+							new Label(writer)
+								.WithClass("form-check-label")
+								.WithFor(id)
+								.Close(assemblyName.ToHtml());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private static string CreateSafeId(string value)
+	{
+		return string.Concat(value.Select(static c => char.IsLetterOrDigit(c) ? c : '_'));
 	}
 
 	protected override void WriteScriptReferences(TextWriter writer)

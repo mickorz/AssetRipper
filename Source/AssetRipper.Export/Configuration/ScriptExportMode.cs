@@ -11,6 +11,10 @@ public enum ScriptExportMode
 	/// </summary>
 	Hybrid,
 	/// <summary>
+	/// Selected assemblies are decompiled to CS scripts. Assemblies not selected are saved as DLL files.
+	/// </summary>
+	SelectedDlls,
+	/// <summary>
 	/// Special assemblies, such as Assembly-CSharp, are renamed to have compatible names.
 	/// </summary>
 	DllExportWithRenaming,
