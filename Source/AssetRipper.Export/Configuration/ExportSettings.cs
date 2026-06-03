@@ -57,7 +57,7 @@ public sealed record class ExportSettings
 	/// <summary>
 	/// How are exported asset paths chosen?
 	/// </summary>
-	public AssetPathExportMode AssetPathExportMode { get; set; } = AssetPathExportMode.PreserveContainerPath;
+	public AssetPathExportMode AssetPathExportMode { get; set; } = AssetPathExportMode.Default;
 
 	public bool ExportUnreadableAssets { get; set; } = false;
 
