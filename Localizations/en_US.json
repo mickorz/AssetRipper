@@ -24,6 +24,8 @@
     "asset_path_export_default_description": "Use AssetRipper's existing export path behavior.",
     "asset_path_export_preserve_container_path": "Preserve Container Path",
     "asset_path_export_preserve_container_path_description": "Use the original AssetBundle or ResourceManager container path when it is available and safe.",
+    "asset_path_export_preserve_addressable_path": "Preserve Addressable Path",
+    "asset_path_export_preserve_addressable_path_description": "Export using the original container path only when it starts with Assets/AddressableAssets. Other assets use default behavior.",
     "asset_path_export_title": "Asset Path Export Mode",
     "assets": "Assets",
     "audio_clip": "AudioClip",

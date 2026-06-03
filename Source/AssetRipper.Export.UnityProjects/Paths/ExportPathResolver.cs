@@ -17,6 +17,7 @@ namespace AssetRipper.Export.UnityProjects.Paths;
 public static class ExportPathResolver
 {
 	private const string AssetsDirectory = "Assets";
+	private const string AddressableAssetsPrefix = "Assets/AddressableAssets";
 	private const char Separator = '/';
 
 	public static ExportPathInfo Resolve(IUnityObjectBase asset, AssetPathExportMode mode, IUnityObjectBase? sourceFilePathAsset = null)
@@ -39,8 +40,27 @@ public static class ExportPathResolver
 			return sourceFilePath;
 		}
 
+		// 仅对 Addressable 路径按原始路径导出
+		if (mode is AssetPathExportMode.PreserveAddressablePath
+			&& IsAddressablePath(asset.OriginalPath)
+			&& TryResolveOriginalPath(asset.OriginalPath!, out ExportPathInfo addressablePath))
+		{
+			return addressablePath;
+		}
+
 		bool ignoreOriginalDirectory = mode is AssetPathExportMode.PreserveContainerPath && !string.IsNullOrEmpty(asset.OriginalPath);
 		return ResolveFallback(asset, ignoreOriginalDirectory);
+	}
+
+	private static bool IsAddressablePath(string? path)
+	{
+		if (string.IsNullOrEmpty(path))
+		{
+			return false;
+		}
+
+		string normalizedPath = path.Replace('\\', Separator);
+		return normalizedPath.StartsWith(AddressableAssetsPrefix, StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static bool HasOverridePath(IUnityObjectBase asset)

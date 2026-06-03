@@ -12,6 +12,7 @@ public sealed class AssetPathExportModeDropDownSetting : DropDownSetting<AssetPa
 	{
 		AssetPathExportMode.Default => Localization.AssetPathExportDefault,
 		AssetPathExportMode.PreserveContainerPath => Localization.AssetPathExportPreserveContainerPath,
+		AssetPathExportMode.PreserveAddressablePath => Localization.AssetPathExportPreserveAddressablePath,
 		_ => base.GetDisplayName(value),
 	};
 
@@ -19,6 +20,7 @@ public sealed class AssetPathExportModeDropDownSetting : DropDownSetting<AssetPa
 	{
 		AssetPathExportMode.Default => Localization.AssetPathExportDefaultDescription,
 		AssetPathExportMode.PreserveContainerPath => Localization.AssetPathExportPreserveContainerPathDescription,
+		AssetPathExportMode.PreserveAddressablePath => Localization.AssetPathExportPreserveAddressablePathDescription,
 		_ => base.GetDescription(value),
 	};
 }

@@ -4,4 +4,5 @@ public enum AssetPathExportMode
 {
 	Default,
 	PreserveContainerPath,
+	PreserveAddressablePath,
 }
