@@ -119,6 +119,11 @@ public sealed class SerializableStructure : UnityAssetBase, IDeepCloneable
 
 	public bool TryRead(ref EndianSpanReader reader, IMonoBehaviour monoBehaviour)
 	{
+		return TryRead(ref reader, monoBehaviour, out _);
+	}
+
+	public bool TryRead(ref EndianSpanReader reader, IMonoBehaviour monoBehaviour, out string? failureReason)
+	{
 		try
 		{
 			Read(ref reader, monoBehaviour.Collection.Version, monoBehaviour.Collection.Flags);
@@ -126,13 +131,16 @@ public sealed class SerializableStructure : UnityAssetBase, IDeepCloneable
 		catch (Exception ex)
 		{
 			LogMonoBehaviorReadException(this, ex);
+			failureReason = ex.GetType().Name;
 			return false;
 		}
 		if (reader.Position != reader.Length)
 		{
 			LogMonoBehaviourMismatch(this, reader.Position, reader.Length);
+			failureReason = $"read {reader.Position} bytes, expected {reader.Length} bytes";
 			return false;
 		}
+		failureReason = null;
 		return true;
 	}
 

@@ -1,5 +1,6 @@
 ﻿using AssetRipper.Assets.Bundles;
 using AssetRipper.Export.Configuration;
+using AssetRipper.Export.UnityProjects.Diagnostics;
 using AssetRipper.Export.UnityProjects.PathIdMapping;
 using AssetRipper.Export.UnityProjects.Project;
 using AssetRipper.Export.UnityProjects.Scripts;
@@ -29,10 +30,11 @@ namespace AssetRipper.Export.UnityProjects;
  Process()
      ├─> 执行程序集处理器
      └─> 执行资源处理器
- Export()
-     ├─> 应用导出设置
-     ├─> 写出 Unity 工程
-     └─> 执行后处理导出器
+Export()
+    ├─> 应用导出设置
+    ├─> 写出 Unity 工程
+    ├─> 写出诊断报告
+    └─> 执行后处理导出器
 */
 public class ExportHandler
 {
@@ -123,6 +125,7 @@ public class ExportHandler
 		BeforeExport(projectExporter);
 		projectExporter.DoFinalOverrides(Settings);
 		projectExporter.Export(gameData.GameBundle, Settings, fileSystem);
+		MonoBehaviourStructureFailureLogExporter.Export(gameData.AssemblyManager, Settings, fileSystem);
 
 		Logger.Info(LogCategory.Export, "Finished exporting assets");
 
